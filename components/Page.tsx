@@ -8,11 +8,7 @@ type Props = {
   children: ReactNode;
 };
 
-export default function Page({
-  title,
-  className = '',
-  children,
-}: Props) {
+export default function Page({ title, className = '', children }: Props) {
   return (
     <>
       <MetaTags title={title} />
