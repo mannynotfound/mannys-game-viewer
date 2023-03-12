@@ -1,0 +1,4 @@
+node_modules
+build
+views/docs/mdx
+.github
