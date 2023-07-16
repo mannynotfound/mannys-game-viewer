@@ -5,24 +5,24 @@ import { getTokenProps } from '@/utils';
 
 type Props = {
   textureUrl?: string;
-  animationName?: string;
+  tokenId: number;
 };
 
-function ViewPage({ textureUrl, animationName }: Props) {
+function ViewPage({ textureUrl, tokenId }: Props) {
   return (
     <Page className="bg-white text-green">
-      <TokenViewer textureUrl={textureUrl} animationName={animationName} />
+      <TokenViewer textureUrl={textureUrl} tokenId={tokenId} />
     </Page>
   );
 }
 
 ViewPage.getInitialProps = async ({ query }: { query: ParsedUrlQuery }) => {
   const tokenStr = query.tokenId?.toString() ?? '0';
-  const tokenMatch = getTokenProps(parseInt(tokenStr, 10));
+  const tokenId = parseInt(tokenStr, 10);
+  const tokenMatch = getTokenProps(tokenId);
   const textureUrl = tokenMatch?.textureUrl;
-  const animationName = tokenMatch?.animationName;
 
-  return { textureUrl, animationName };
+  return { textureUrl, tokenId };
 };
 
 export default ViewPage;

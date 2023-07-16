@@ -25,3 +25,34 @@ export type TokenMetadata = {
   iframe_url: string;
   attributes: MetadataAttribute[];
 };
+
+export type CameraMeta = {
+  position: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  pfp_mode: boolean;
+};
+
+export type AnimationMeta = {
+  id: string;
+  time: number;
+  paused: boolean;
+};
+
+export type AccessoriesMeta = {
+  [slot: string]: string[];
+};
+
+export type SceneMeta = {
+  background_color: string;
+  texture_hd: boolean;
+};
+
+export type TokenUserMetadata = {
+  camera: CameraMeta;
+  animation: AnimationMeta;
+  accessories: AccessoriesMeta;
+  scene: SceneMeta;
+};

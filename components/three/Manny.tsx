@@ -1,21 +1,37 @@
 import { useEffect, useState } from 'react';
-import { Vector3, Euler, Group } from 'three';
-// @ts-expect-error: add types to manny module
+import {
+  Vector3,
+  Euler,
+  Object3D,
+  AnimationAction,
+  AnimationMixer,
+} from 'three';
 import manny from 'manny';
+import useAccessories from '@/hooks/useAccessories';
 import { MANNY_TEXTURE_DEFAULT, MANNY_FBX, LIBRARY } from '@/utils/constants';
 
 type Props = {
   textureUrl?: string;
+  accessories?: {
+    [slot: string]: string[];
+  };
   animation?: string;
   paused?: boolean;
-  onLoad?: (manny: Group) => void;
+  onLoad?: (mannyProps: MannyProps) => void;
   scale?: number;
   position?: number[];
   rotation?: number[];
 };
 
+export type MannyProps = {
+  manny: Object3D;
+  actions: Record<string, AnimationAction> | undefined;
+  mixer: AnimationMixer;
+};
+
 function Manny({
   textureUrl = MANNY_TEXTURE_DEFAULT,
+  accessories,
   animation = 'idle',
   paused = false,
   onLoad,
@@ -26,26 +42,27 @@ function Manny({
   const [loaded, setLoaded] = useState(false);
 
   const animationOptions = {
-    active: animation,
+    animation,
     paused,
-    // only pass in selected path so initial load doesnt take forever
-    paths: {
-      [animation]: LIBRARY[animation],
+    library: {
+      ...LIBRARY,
     },
   };
 
-  const mannyObj = manny({
+  const mannyProps = manny({
     modelPath: MANNY_FBX,
     textureUrl,
-    animationOptions,
+    ...animationOptions,
   });
 
+  useAccessories(mannyProps.manny, accessories);
+
   useEffect(() => {
-    if (!loaded) {
+    if (!loaded && mannyProps.actions?.[animation] !== undefined) {
       setLoaded(true);
-      if (onLoad) onLoad(mannyObj);
+      if (onLoad) onLoad(mannyProps);
     }
-  }, [mannyObj, loaded, onLoad]);
+  }, [mannyProps, loaded, onLoad, animation]);
 
   return (
     <group
@@ -53,7 +70,7 @@ function Manny({
       rotation={new Euler(...rotation)}
       scale={scale}
     >
-      <primitive object={mannyObj} dispose={null} />
+      <primitive object={mannyProps.manny} dispose={null} />
     </group>
   );
 }

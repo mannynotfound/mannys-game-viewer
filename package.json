@@ -11,10 +11,12 @@
   "dependencies": {
     "@react-three/drei": "8.7.3",
     "@react-three/fiber": "7.0.26",
-    "manny": "^3.2.3",
+    "framer-motion": "^10.12.21",
+    "manny": "^4.0.4",
     "next": "13.1.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "swr": "^2.2.0",
     "tailwind-merge": "^1.10.0",
     "three": "0.143.0"
   },

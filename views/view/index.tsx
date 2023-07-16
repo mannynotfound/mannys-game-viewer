@@ -1,11 +1,17 @@
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
+import useSWR from 'swr';
 import { Canvas } from '@react-three/fiber';
 import { Vector3, NoToneMapping, sRGBEncoding } from 'three';
-import { Manny, Controls, Lighting, CameraZoom } from '@/components/three';
+import { Manny, Controls, Lighting } from '@/components/three';
+import { MannyProps } from '@/components/three/Manny';
+import Loader from '@/components/Loader';
+import { fetcher } from '@/utils';
+import { TokenUserMetadata } from '@/utils/types';
+import { API_URL } from '@/utils/constants';
 
 type Props = {
   textureUrl?: string;
-  animationName?: string;
+  tokenId: number;
 };
 
 const getTextureURL = (textureUrl: string, textureHD: boolean) => {
@@ -15,20 +21,73 @@ const getTextureURL = (textureUrl: string, textureHD: boolean) => {
   return textureUrl;
 };
 
-export default function View({ textureUrl, animationName }: Props) {
-  const [zoomedIn, setZoomedIn] = useState(false);
-  const [mood, setMood] = useState('idle');
+export default function View({ textureUrl, tokenId }: Props) {
+  const [initialCameraPosition, setInitialCameraPosition] = useState<{
+    x: number;
+    y: number;
+    z: number;
+  }>();
+  const [loadingManny, setLoadingManny] = useState(true);
+  const [mannyLoaded, setMannyLoaded] = useState<MannyProps>();
+  const {
+    data: userMetadata,
+    error: userMetadataError,
+    isLoading,
+  } = useSWR<Partial<TokenUserMetadata>>(
+    `${API_URL}/nft/metadata/${tokenId}`,
+    fetcher
+  );
 
-  // no texture, no manny
-  if (textureUrl === undefined) {
+  useEffect(() => {
+    if (mannyLoaded?.actions !== undefined && userMetadata?.animation?.time) {
+      const activeAction = mannyLoaded.actions?.[userMetadata.animation.id];
+      if (activeAction !== undefined) {
+        activeAction.time = userMetadata?.animation?.time;
+      }
+    }
+  }, [mannyLoaded, userMetadata]);
+
+  const onMannyLoad = useCallback((mannyProps: MannyProps) => {
+    setMannyLoaded(mannyProps);
+  }, []);
+
+  useEffect(() => {
+    if (initialCameraPosition !== undefined) return;
+    if (userMetadata !== undefined || !isLoading) {
+      if (userMetadata?.camera !== undefined) {
+        setInitialCameraPosition(userMetadata.camera.position);
+      } else {
+        setInitialCameraPosition({ x: 25, y: 100, z: 200 });
+      }
+    }
+    if (userMetadataError !== undefined) {
+      console.error(userMetadataError);
+    }
+  }, [isLoading, userMetadata, userMetadataError, initialCameraPosition]);
+
+  useEffect(() => {
+    if (!loadingManny) return;
+    if (mannyLoaded) {
+      setLoadingManny(false);
+    }
+  }, [loadingManny, mannyLoaded]);
+
+  // wait for textureUrl + cameraPosition
+  if (textureUrl === undefined || initialCameraPosition === undefined) {
     return null;
   }
 
+  const zoomedIn = userMetadata?.camera?.pfp_mode === true ?? false;
   const zoomedInCameraPosition = [5, 82, 60];
   const ogCameraPosition = [25, 100, 200];
-  const cameraPosition = zoomedIn
-    ? new Vector3(...zoomedInCameraPosition)
-    : new Vector3(...ogCameraPosition);
+  const cameraPosition =
+    initialCameraPosition !== undefined && !zoomedIn
+      ? new Vector3(
+          initialCameraPosition.x,
+          initialCameraPosition.y,
+          initialCameraPosition.z
+        )
+      : new Vector3(...(zoomedIn ? zoomedInCameraPosition : ogCameraPosition));
   const ogTarget = [0, 15, 0];
   const zoomedInTarget = [0, 80, 0];
   const controlsTarget = zoomedIn ? zoomedInTarget : ogTarget;
@@ -56,43 +115,22 @@ export default function View({ textureUrl, animationName }: Props) {
         >
           <Suspense fallback={null}>
             <Manny
-              paused={zoomedIn}
+              paused={zoomedIn || (userMetadata?.animation?.paused ?? false)}
               scale={1}
               position={[0, -75, 0]}
-              animation={zoomedIn ? 'idle' : mood}
+              animation={
+                zoomedIn ? 'idle' : userMetadata?.animation?.id ?? 'idle'
+              }
               textureUrl={getTextureURL(textureUrl, zoomedIn)}
+              accessories={userMetadata?.accessories}
+              onLoad={onMannyLoad}
             />
           </Suspense>
           <Controls target={controlsTarget} />
-          <CameraZoom
-            zoomedIn={zoomedIn}
-            zoomedInCameraPosition={zoomedInCameraPosition}
-            ogCameraPosition={ogCameraPosition}
-          />
           <Lighting />
         </Canvas>
       </div>
-      {animationName !== undefined && (
-        <div className="fixed bottom-0 p-5 w-full flex justify-between">
-          <div
-            className={
-              'cursor-pointer ' +
-              (zoomedIn ? 'opacity-0 pointer-events-none' : '')
-            }
-            onClick={() => setMood(mood === 'idle' ? animationName : 'idle')}
-          >
-            {animationName.toUpperCase()}
-          </div>
-          <div
-            className="cursor-pointer"
-            onClick={() => {
-              setZoomedIn(!zoomedIn);
-            }}
-          >
-            {zoomedIn ? 'EXIT' : 'PORTRAIT MODE'}
-          </div>
-        </div>
-      )}
+      {loadingManny && <Loader />}
     </>
   );
 }
