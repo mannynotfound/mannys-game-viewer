@@ -94,7 +94,12 @@ export default function View({ textureUrl, tokenId }: Props) {
 
   return (
     <>
-      <div className="three-container fixed inset-0">
+      <div
+        className="three-container fixed inset-0"
+        style={{
+          backgroundColor: userMetadata?.scene?.background_color ?? 'white',
+        }}
+      >
         <Canvas
           linear
           camera={{
