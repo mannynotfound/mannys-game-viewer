@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useState, useCallback } from 'react';
 import useSWR from 'swr';
 import { Canvas } from '@react-three/fiber';
+import { Environment } from '@react-three/drei';
 import { Vector3, NoToneMapping, sRGBEncoding } from 'three';
 import { Manny, Controls, Lighting } from '@/components/three';
 import { MannyProps } from '@/components/three/Manny';
@@ -133,6 +134,7 @@ export default function View({ textureUrl, tokenId }: Props) {
           </Suspense>
           <Controls target={controlsTarget} />
           <Lighting />
+          <Environment preset="warehouse" />
         </Canvas>
       </div>
       {loadingManny && <Loader />}
